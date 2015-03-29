@@ -26,3 +26,5 @@
 *.exe
 *.out
 *.app
+/project/VisualStudio 2014/Debug
+/project/VisualStudio 2014/x64/Debug
