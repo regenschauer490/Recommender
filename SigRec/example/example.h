@@ -1,3 +1,14 @@
-﻿#include "make_input.hpp"
+﻿#pragma once
 
-void example_ctr(FilepassString src_folder, FilepassString out_folder, sig::uint topic_num, bool run_lda, bool make_new);
+#include "../lib/sigrec.hpp"
+
+void example_ctr(
+	sig::FilepathString test_folder,
+	sig::uint num_topic,
+	sig::uint num_cross_validation,
+	bool is_japanese_text,
+	bool run_pre_train,
+	bool make_dataset
+);
+
+void example_mf_sgd();

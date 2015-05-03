@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\SigRec\main.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\SigRec\lib\model\ctr.cpp">
+      <Filter>source\model</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\SigRec\example\example_ctr.cpp">
+      <Filter>source\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\TopicModel\SigTM\lib\model\lda_gibbs.cpp">
+      <Filter>source\sigtm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\SigRec\example\example_mf_sgd.cpp">
+      <Filter>source\test</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\SigRec\lib\sigrec.hpp">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\SigRec\lib\model\ctr.h">
+      <Filter>header\model</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\SigRec\lib\validation\cross_validation.hpp">
+      <Filter>header\validation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\SigRec\lib\validation\ctr_validation.hpp">
+      <Filter>header\validation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\SigRec\lib\validation\metrics.hpp">
+      <Filter>header\validation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\SigRec\lib\model\mf_sgd.hpp">
+      <Filter>header\model</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\SigRec\example\example.h">
+      <Filter>header\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\SigRec\example\make_input.hpp">
+      <Filter>header\test</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\SigRec\lib\model\pmf_coords.hpp">
+      <Filter>header\model</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\SigRec\lib\model\mf_interface.hpp">
+      <Filter>header\model</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="header">
+      <UniqueIdentifier>{5bb0b856-7d86-4f9b-b829-936c11292864}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source">
+      <UniqueIdentifier>{021a8f14-cddf-4d30-b5fc-f82ae68e9c15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="header\model">
+      <UniqueIdentifier>{4505934b-d626-4cc1-963f-e2cba7eb3992}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\model">
+      <UniqueIdentifier>{c4e16f83-0301-4297-8ece-54d8ddfdbdfb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\test">
+      <UniqueIdentifier>{8544aed5-c45e-4a9e-9b5e-51af7e729cca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="header\test">
+      <UniqueIdentifier>{fa2ad789-764b-4e2f-beea-802380c40d6a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="header\validation">
+      <UniqueIdentifier>{27dfb0b6-107a-40fb-947d-0d5a36f537e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\sigtm">
+      <UniqueIdentifier>{51895f24-5996-4b8e-8e3a-25eb24e46952}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

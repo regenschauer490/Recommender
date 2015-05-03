@@ -1,21 +1,22 @@
 ﻿/*
-Copyright(c) 2014 Akihiro Nishimura
+Copyright(c) 2015 Akihiro Nishimura
 
 This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
 */
 
-#ifndef SIGTM_CROSS_VALIDATION_H
-#define SIGTM_CROSS_VALIDATION_H
+#ifndef SIGREC_CROSS_VALIDATION_HPP
+#define SIGREC_CROSS_VALIDATION_HPP
 
-#include "rating_matrix.hpp"
+#include "SigDM/lib/ratings/sparse_matrix.hpp"
 #include "SigUtil/lib/modify/shuffle.hpp"
 //#include <boost/range/adapter/slice.hpp>
 
-namespace sigtm
+namespace sigrec
 {
-
-class CTR;
+using sigdm::Rating;
+using sigdm::RatingContainer;
+using sigdm::SparseRatingMatrix;
 
 template <class T>
 using RatingChunk = std::vector<std::vector<RatingContainer<T>>>;
@@ -31,7 +32,7 @@ public:
 	struct DetailInfoBase
 	{
 		const bool is_user_test_;
-		const uint div_num_;
+		uint const div_num_;
 		int less_than_div_num_;
 		double sparsity_;
 		std::vector<double> chunk_sparsity_;
@@ -41,8 +42,8 @@ public:
 		DetailInfoBase(DetailInfoBase const&) = delete;
 		virtual ~DetailInfoBase() = default;
 
-		virtual void save(sig::FilepassString pass) const {
-			std::ofstream ofs(pass);
+		virtual void save(FilepathString path) const {
+			std::ofstream ofs(path);
 			ofs << "this validation is for user test (1:true, 0:false): " << is_user_test_ << std::endl;
 			ofs << "division number of dataset (number of chunks):  " << div_num_ << std::endl;
 			ofs << "items less than division number in dataset: " << less_than_div_num_ << std::endl;
@@ -84,9 +85,9 @@ protected:
 	}
 
 	template <class T>
-	auto devide_random(SparseRatingMatrixBase_<T> const& src) ->RatingChunk<T>
+	auto devide_random(SparseRatingMatrix<T> const& src) ->RatingChunk<T>
 	{
-		const uint n = detail_info_->div_num_;
+		uint const n = detail_info_->div_num_;
 		const bool is_user_test = detail_info_->is_user_test_;
 		uint all_ct = 0;
 
@@ -102,7 +103,7 @@ protected:
 		sig::shuffle(ratings);
 
 		RatingChunk<T> chunks(n, std::vector<RatingContainer<T>>(is_user_test ? src.userSize() : src.itemSize()));
-		const uint delta = ratings.size() / n;
+		uint const delta = ratings.size() / n;
 
 		for (uint i = 0; i < n; ++i) {
 			for (uint j = i * delta, ed = (i + 1) * delta, size = i != n - 1 ? ed : ratings.size(); j < size; ++j) {
@@ -110,7 +111,7 @@ protected:
 			}
 		}
 
-		const double matrix_size = src.userSize() * src.itemSize();
+		double const matrix_size = src.userSize() * src.itemSize();
 		detail_info_->sparsity_ = all_ct / matrix_size;
 		for (auto const& c : chunks) detail_info_->chunk_sparsity_.push_back(delta / matrix_size);
 
@@ -118,9 +119,9 @@ protected:
 	}
 
 	template <class T>
-	auto devide_adjusted_random(SparseRatingMatrixBase_<T> const& src) ->RatingChunk<T>
+	auto devide_adjusted_random(SparseRatingMatrix<T> const& src) ->RatingChunk<T>
 	{
-		const uint n = detail_info_->div_num_;
+		uint const n = detail_info_->div_num_;
 		const bool is_user_test = detail_info_->is_user_test_;
 		uint ct = 0, all_ct = 0;
 
@@ -178,7 +179,7 @@ protected:
 		std::cout << "less than n:" << ct << std::endl;
 		detail_info_->less_than_div_num_ = ct;
 
-		const double matrix_size = src.userSize() * src.itemSize();
+		double const matrix_size = src.userSize() * src.itemSize();
 		detail_info_->sparsity_ = all_ct / matrix_size;
 		for (auto const& c : chunks) {
 			uint ct = 0;
@@ -195,8 +196,8 @@ protected:
 	{
 		std::vector<R> result;
 
-		const uint cpu_core_num = std::thread::hardware_concurrency();
-		const uint div = std::ceil(static_cast<double>(n) / cpu_core_num);
+		uint const cpu_core_num = std::thread::hardware_concurrency();
+		uint const div = std::ceil(static_cast<double>(n) / cpu_core_num);
 
 		for (uint d = 0; d < div; ++d){
 			std::vector<std::future<R>> task;
@@ -213,8 +214,6 @@ protected:
 		return result;
 	}
 };
-
-
 
 }
 #endif

@@ -1,61 +1,65 @@
 ﻿/*
-Copyright(c) 2014 Akihiro Nishimura
+Copyright(c) 2015 Akihiro Nishimura
 
 This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
 */
 
-#ifndef SIGTM_CTR_HPP
-#define SIGTM_CTR_HPP
+#ifndef SIGREC_CTR_HPP
+#define SIGREC_CTR_HPP
 
 #include "../sigrec.hpp"
 
 #if SIG_USE_SIGTM
 
+#pragma warning(disable : 4996) 
 #define _SCL_SECURE_NO_WARNINGS
 #define NDEBUG
 
-#include "../util/rating_matrix.hpp"
-#include "../util/eigen_ublas_util.hpp"
-#include "SigTM/util/data_format.hpp"
-#include "SigTM/model/common/lda_module.hpp"
+#include "../sigrec.hpp"
+#include "SigDM/lib/util/eigen_ublas_util.hpp"
+#include "SigDM/lib/ratings/sparse_boolean_matrix.hpp"
+#include "SigDM/lib/documents/document_set.hpp"
+#include "SigTM/lib/model/common/lda_module.hpp"
 
-namespace sigtm
+namespace sigrec
 {
+using sigdm::VectorD;
+using sigdm::VectorV;
+using sigdm::RatingPtr;
+using sigdm::SparseRatingMatrix;
+using sigdm::SparseRatingMatrixPtr;
+using sigdm::SparseBooleanMatrix;
+using sigdm::SparseBooleanMatrixPtr; 
+using sigdm::TopicId;
+using sigdm::WordId;
+using sigdm::TokenId;
+using sigdm::TokenList;
+using sigdm::TokenListPtr;
+using sigdm::DocumentSetPtr;
 
-template <class T> using MatrixUI = std::vector<std::vector<T>>;
-template <class T> using MatrixIK = std::vector<std::vector<T>>;
+template <class T> using MatrixUI = VectorU<VectorI<T>>;
+template <class T> using MatrixIK = VectorI<VectorK<T>>;
+template <class T> using MatrixKV = VectorK<VectorV<T>>;
 
-#if SIG_USE_EIGEN
-using VectorK_ = EigenVector;
-using VectorV_ = EigenVector;
-using MatrixIK_ = EigenMatrix;
-using MatrixUK_ = EigenMatrix;
-using MatrixKK_ = EigenMatrix;
-using MatrixKV_ = EigenMatrix;
-using MatrixTK_ = EigenMatrix;
-
-#else
-using VectorK_ = sig::vector_u<double>;
-using VectorV_ = sig::vector_u<double>;
-using MatrixIK_ = sig::matrix_u<double>;
-using MatrixUK_ = sig::matrix_u<double>;
-using MatrixKK_ = sig::matrix_u<double>;
-using MatrixKV_ = sig::matrix_u<double>;
-using MatrixTK_ = sig::matrix_u<double>;
-#endif
+using BlasVectorK = BlasVector<double>;
+using BlasMatrixIK = BlasMatrix<double>;
+using BlasMatrixUK = BlasMatrix<double>;
+using BlasMatrixKK = BlasMatrix<double>;
+using BlasMatrixKV = BlasMatrix<double>;
+using BlasMatrixTK = BlasMatrix<double>;
 
 struct CtrHyperparameter : boost::noncopyable
 {
-	std::vector<VectorK<double>> theta_;
-	VectorK<VectorV<double>> beta_;
-	uint topic_num_;
-	double a_;				// positive update weight in U,V (the degree of effects of src ratings)
-	double b_;				// negative update weight in U,V (b < a)
-	double lambda_u_;		// penalty weight for user's feature vector
-	double lambda_v_;		// the higher lambda_v is, the more similar item's feature vector and theta is
-	bool theta_opt_;
-	bool enable_recommend_cache_;
+	VectorD<VectorK<double>>	theta_;
+	VectorK<VectorV<double>>	beta_;
+	uint	topic_num_;
+	double	a_;				// positive update weight in U,V (the degree of effects of src ratings)
+	double	b_;				// negative update weight in U,V (b < a)
+	double	lambda_u_;		// penalty weight for user's feature vector
+	double	lambda_v_;		// the higher lambda_v is, the more similar item's feature vector and theta is
+	bool	theta_opt_;
+	bool	enable_recommend_cache_;
 
 private:
 	CtrHyperparameter(uint topic_num, bool optimize_theta, bool enable_recommend_cache)
@@ -87,51 +91,65 @@ public:
 using CTRHyperParamPtr = std::shared_ptr<CtrHyperparameter>;
 
 
-//template <class RatingValueType>
-class CTR : private impl::LDA_Module
+/**
+\brief
+	Collaborative Topic Regression model 
+
+\details
+	This model recommends each user to ranked items by topic specified collaborative filtering.
+	Basic matrix factorization model for collaborative filtering learns model-parameters to estimate missing ratings from known ratings,
+	however it's difficult to learn if known rating-matrix has few ratings (problem of sparseness).
+	This model utilize not only ratings but also texts about items(or users), so information of texts compensate for lack of ratings.
+	In detail, latent factors of parameters are affected by item(or user)'s topics extracted from texts.
+
+	[1] Wang, C. and Blei, D.M.: Collaborative topic modeling for recommending scientific articles, Proc. ACM SIGKDD (2011)
+*/
+class CTR : private sigtm::impl::LDA_Module
 {
 public:
 	using RatingValueType = int;
-	using RatingPtr_ = RatingPtr<RatingValueType>;
 	using EstValueType = std::pair<Id, double>;
+	using RatingPtr_ = RatingPtr<RatingValueType>;
 
 private:
-	using RatingIter = SparseBooleanMatrix::const_iterator;
-	using RatingContainer = SparseBooleanMatrix::const_rating_range;
+	using RatingIter_ = SparseBooleanMatrix::const_iterator;
+	using RatingContainer_ = SparseBooleanMatrix::const_rating_range;
 	
-	const int model_id_;
-	const CTRHyperParamPtr hparam_;
-	const DocumentSetPtr input_data_;
-	const RatingMatrixPtr<RatingValueType> ratings_;
-	const TokenList& tokens_;
+private:
+	int const	model_id_;	// for cross validation
 
-	const VectorI<std::vector<TokenId>> item_tokens_;	// tokens in each item(document)
+	CTRHyperParamPtr const	hparam_;
+	DocumentSetPtr const	input_data_;
+	TokenListPtr const		src_tokens_;
+	TokenList const&		tokens_;
+	SparseRatingMatrixPtr<RatingValueType> const ratings_;
+	VectorI<std::vector<TokenId>> const			item_tokens_;	// tokens in each item(document)
 
-	const RatingContainer user_ratings_;
-	const RatingContainer item_ratings_;
+	RatingContainer_ const	user_ratings_;
+	RatingContainer_ const	item_ratings_;
 
-	const uint T_;		// number of tokens
-	const uint K_;		// number of topics(factor)
-	const uint V_;		// number of words	
-	const uint U_;		// number of users
-	const uint I_;		// number of items
+	uint const T_;		// number of tokens
+	uint const K_;		// number of topics(factor)
+	uint const V_;		// number of words	
+	uint const U_;		// number of users
+	uint const I_;		// number of items
 
-	MatrixKV_ beta_;	// word distribution of topic
-	MatrixIK_ theta_;
-	MatrixUK_ user_factor_;
-	MatrixIK_ item_factor_;
+	BlasMatrixKV beta_;	// word distribution of topic
+	BlasMatrixIK theta_;
+	BlasMatrixUK user_factor_;
+	BlasMatrixIK item_factor_;
 
-	mutable Maybe<MatrixUI<Maybe<double>>> estimate_ratings_;
-	mutable Maybe<MatrixKV<double>> term_score_;
+	mutable Maybe<MatrixUI<Maybe<double>>>	estimate_ratings_;
+	mutable Maybe<MatrixKV<double>>			term_score_;
 
 	double likelihood_;
-	const double conv_epsilon_ = 1e-4;
+	double const conv_epsilon_ = 1e-4;
 
 	// temporary
-	VectorK_ gamma_;
-	MatrixKV_ log_beta_;
-	MatrixKV_ word_ss_;
-	MatrixTK_ phi_;
+	BlasVectorK gamma_;
+	BlasMatrixKV log_beta_;
+	BlasMatrixKV word_ss_;
+	BlasMatrixTK phi_;
 
 private:
 	void init();
@@ -152,49 +170,80 @@ private:
 	auto recommend_impl(Id id, bool for_user, bool ignore_train_set = true) const->std::vector<std::pair<Id, double>>;
 	
 private:
-	CTR(CTRHyperParamPtr hparam, DocumentSetPtr docs, RatingMatrixPtr<RatingValueType> ratings, int model_id)
-	: model_id_(model_id), hparam_(hparam), input_data_(docs), ratings_(ratings), tokens_(docs->tokens_), item_tokens_(docs->getDevidedDocument()),
-		user_ratings_(ratings->getUsers()), item_ratings_(ratings->getItems()), T_(docs->getTokenNum()), K_(hparam->topic_num_), V_(docs->getWordNum()),
-		U_(ratings->userSize()), I_(ratings->itemSize()), beta_(K_, V_), theta_(I_, K_), user_factor_(U_, K_), item_factor_(I_, K_),
-		estimate_ratings_(nothing), likelihood_(-std::exp(50)),	gamma_(K_), log_beta_(K_, V_), word_ss_(K_, V_), phi_(T_, K_)
+	CTR(CTRHyperParamPtr hparam, DocumentSetPtr docs, SparseRatingMatrixPtr<RatingValueType> ratings, int model_id)
+	: model_id_(model_id), hparam_(hparam), input_data_(docs), src_tokens_(docs->getTokenList()), tokens_(*src_tokens_), ratings_(ratings), item_tokens_(docs->getDevidedDocument()),
+		user_ratings_(ratings->getUsers()), item_ratings_(ratings->getItems()), 
+		T_(docs->getTokenNum()), K_(hparam->topic_num_), V_(docs->getWordNum()), U_(ratings->userSize()), I_(ratings->itemSize()),
+		beta_(K_, V_), theta_(I_, K_), user_factor_(U_, K_), item_factor_(I_, K_),
+		estimate_ratings_(Nothing(MatrixUI<Maybe<double>>{})), term_score_(Nothing(MatrixKV<double>{})), likelihood_(-std::exp(50)),
+		gamma_(K_), log_beta_(K_, V_), word_ss_(K_, V_), phi_(T_, K_)
 	{
 		init();
 	}
-	CTR(CTRHyperParamPtr hparam, DocumentSetPtr docs, RatingMatrixPtr<RatingValueType> ratings)
+	CTR(CTRHyperParamPtr hparam, DocumentSetPtr docs, SparseRatingMatrixPtr<RatingValueType> ratings)
 	: CTR(hparam, docs, ratings, -1) {}
 	
 public:	
-	static auto makeInstance(CTRHyperParamPtr hparam, DocumentSetPtr docs, RatingMatrixPtr<RatingValueType> ratings) ->std::shared_ptr<CTR>
+	/**
+	\brief
+		@~japanese ファクトリ関数	\n
+		@~english factory function	\n
+
+	\details
+		@~japanese
+
+		@~english
+	*/
+	static auto makeInstance(
+		CTRHyperParamPtr hparam,
+		DocumentSetPtr docs, 
+		SparseRatingMatrixPtr<RatingValueType> ratings
+	) ->std::shared_ptr<CTR>
 	{
 		return std::shared_ptr<CTR>(new CTR(hparam, docs, ratings));
 	}
-	static auto makeInstance(CTRHyperParamPtr hparam, DocumentSetPtr docs, RatingMatrixPtr<RatingValueType> ratings, uint model_id) ->std::shared_ptr<CTR>
+	/**
+	\brief
+		@~japanese ファクトリ関数(Cross Validation時の並列処理用)	\n
+		@~english factory function(for cross validation)	\n
+
+	\details
+		@~japanese
+
+		@~english
+	*/
+	static auto makeInstance(
+		CTRHyperParamPtr hparam,
+		DocumentSetPtr docs, 
+		SparseRatingMatrixPtr<RatingValueType> ratings,
+		uint model_id
+	) ->std::shared_ptr<CTR>
 	{
 		return std::shared_ptr<CTR>(new CTR(hparam, docs, ratings, model_id));
 	}
 
-	void train(uint max_iter, uint min_iter, sig::Maybe<FilepassString> info_saved_dir = sig::Nothing(), bool is_save_parameter = false);
+	void train(uint max_iter, uint min_iter, Maybe<FilepathString> info_saved_dir = Nothing(), bool is_save_parameter = false);
 
 	// return recommended item(for user) or user(for item) list (descending by estimated rating value)
-	auto recommend(Id id, bool for_user, sig::Maybe<uint> top_n, sig::Maybe<double> threshold) const->std::vector<std::pair<Id, double>>;
+	auto recommend(Id id, bool for_user, Maybe<uint> top_n, Maybe<double> threshold) const->std::vector<std::pair<Id, double>>;
 
 	double estimate(UserId u_id, ItemId i_id) const;
 	
 
 	//ドキュメントのトピック比率
-	auto getTheta() const->MatrixIK<double>{ return impl::to_stl_matrix(theta_); }
-	auto getTheta(ItemId i_id) const->VectorK<double>{ return impl::to_stl_vector(impl::row_(theta_, i_id)); }
+	auto getTheta() const->MatrixIK<double>{ return sigdm::impl::to_stl_matrix(theta_); }
+	auto getTheta(ItemId i_id) const->VectorK<double>{ return sigdm::impl::to_stl_vector(sigdm::impl::row_(theta_, i_id)); }
 
 	//トピックの単語比率
-	auto getPhi() const->MatrixKV<double>{ return impl::to_stl_matrix(beta_); }
-	auto getPhi(TopicId k_id) const->VectorV<double>{ return impl::to_stl_vector(impl::row_(beta_, k_id)); }
+	auto getPhi() const->MatrixKV<double>{ return sigdm::impl::to_stl_matrix(beta_); }
+	auto getPhi(TopicId k_id) const->VectorV<double>{ return sigdm::impl::to_stl_vector(sigdm::impl::row_(beta_, k_id)); }
 
 	//トピックを強調する単語スコア
 	auto getTermScore() const->MatrixKV<double>;
 	auto getTermScore(TopicId t_id) const->VectorV<double>;
 
-	// 指定トピックの上位return_word_num個の、語彙とスコアを返す
-	auto getWordOfTopic(TopicId k_id, uint return_word_num, bool calc_term_score = true) const->std::vector< std::tuple<std::wstring, double>>;
+	// 指定トピックの上位num_get_words個の、語彙とスコアを返す
+	auto getWordOfTopic(TopicId k_id, uint num_get_words, bool use_term_score = true) const->std::vector< std::tuple<std::wstring, double>>;
 
 	uint getUserNum() const { return U_; }
 	uint getItemNum() const { return I_; }

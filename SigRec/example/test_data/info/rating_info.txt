@@ -1,0 +1,8 @@
+src item size: 3534
+src user size: 5312
+src rating size: 60986
+max rating size: 18772608 
+sparse rate: 0.996751330449131
+out item size: 3534
+out user size: 5312
+out rating size: 60986

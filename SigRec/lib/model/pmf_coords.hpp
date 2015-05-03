@@ -5,31 +5,39 @@ This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
 */
 
-#ifndef SIGREC_MATRIX_FACTORIZATION_IMPL_HPP
-#define SIGREC_MATRIX_FACTORIZATION_IMPL_HPP
+#ifndef SIGREC_PMF_COORDS_HPP
+#define SIGREC_PMF_COORDS_HPP
 
+#include "../sigrec.hpp"
+#include "SigDM/lib/ratings/rating.hpp"
 #include "SigUtil/lib/tools/random.hpp"
-#include "SigUtil/lib/tools/time_watch.hpp"
-
-#include "../util/rating_matrix.hpp"
 
 namespace sigrec
 {
 
-class MatrixFactorizationImpl
+/**
+\brief
+	Probabilistic Matrix Factorization model
+
+\details
+	
+	[1] Hu, Y., Koren, Y. and Volinsky, C.: Collaborative Filtering for Implicit Feedback Datasets,	Proc. IEEE ICDM (2008)
+*/
+template <class ValueType>
+class PMF_Coords : public MatrixFactorization
 {
-	using Ratings_ = C_RatingPtr;
-	using Matrix_ = Matrix<double>;
+	using RatingMatrix_ = SparseRatingMatrixPtr<ValueType>;
+	using Matrix_ = BlasMatrix<double>;
 
 private:
+	Ratings_ const& ratings_;	// U * V
+
 	uint const U_;	// number of users
 	uint const V_;	// number of items
 	uint const K_;	// number of latent factors
 
 	double const alpha_;	// learning rate of SGD
 	double const lambda_;	// penalty parameter of objective function
-
-	Ratings_ const& ratings_;	// U * V
 
 	Matrix_ mat_u_;	// U * K
 	Matrix_ mat_v_;	// V * K
@@ -38,36 +46,12 @@ private:
 	sig::SimpleRandom<double> random_;
 
 private:
-	template <class F>
-	void init(F const& init_mat_func){
-		for (uint u = 0; u < U_; ++u){
-			for (uint k = 0; k < K_; ++k) mat_u_[u][k] = random_();
-		}
-		for (uint v = 0; v < V_; ++v){
-			for (uint k = 0; k < K_; ++k) mat_v_[v][k] = random_();
-		}
+	void init(std::function<void(Matrix_&)> const& init_mat_func){
+		init_mat_func(mat_u_);
+		init_mat_func(mat_v_);
 	}
 
-	template <class F1, class F2>
-	void update(F1 const& error_func, F2 const& update_func){
-		double soe = 0;
-
-		for (uint u = 0; u < U_; ++u){
-			for (uint v = 0; v < V_; ++v){
-				if (ratings_[u][v] == 0) continue;
-
-				double error = error_func(ratings_[u][v], mat_u_[u], mat_v_[v]);
-				soe += error;
-
-				update_func(mat_u_[u], mat_v_[v], error, alpha_, lambda_);
-				update_func(mat_v_[v], mat_u_[u], error, alpha_, lambda_);
-			}
-		}
-		if(MF_DEBUG_MODE) std::cout << soe << std::endl;
-		
-		//bool local_conv = soe < error_;
-		error_ = soe;
-	}
+	virtual void update() = 0;
 
 public:
 	template <class F>

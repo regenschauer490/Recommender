@@ -1,17 +1,17 @@
 /*
-Copyright(c) 2014 Akihiro Nishimura
+Copyright(c) 2015 Akihiro Nishimura
 
 This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
 */
 
-#ifndef SIGTM_METRICS_HPP
-#define SIGTM_METRICS_HPP
+#ifndef SIGREC_METRICS_HPP
+#define SIGREC_METRICS_HPP
 
-#include "../sigtm.hpp"
+#include "../sigrec.hpp"
 #include "SigUtil/lib/modify/sort.hpp"
 
-namespace sigtm
+namespace sigrec
 {
 
 template <class C1, class C2, class F>
@@ -244,7 +244,7 @@ struct ListPersonalizationMetricImpl
 	auto impl(CC&& estimate_sets) const->sig::Maybe<double>
 	{
 		double sum = 0;
-		const double usize = estimate_sets.size();
+		double const usize = estimate_sets.size();
 		std::unordered_map<Id, uint> kb;
 		std::vector<double> per;
 

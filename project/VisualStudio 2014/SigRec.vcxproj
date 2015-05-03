@@ -103,13 +103,22 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SIGUTIL_PATH);$(SIGTM_PATH);$(BOOST_PATH);$(EIGEN_PATH);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SIGUTIL_PATH);$(SIGDM_PATH);$(SIGTM_PATH);$(BOOST_PATH);$(EIGEN_PATH);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(BOOST_PATH)/stage/x64/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(BOOST_PATH)/stage/x64/lib;$(SIGDM_PATH)/SigDM/external/mecab/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -141,17 +150,28 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SIGUTIL_PATH);$(SIGTM_PATH);$(BOOST_PATH);$(EIGEN_PATH);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SIGUTIL_PATH);$(SIGDM_PATH);$(SIGTM_PATH);$(BOOST_PATH);$(EIGEN_PATH);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(BOOST_PATH)/stage/x64/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(BOOST_PATH)/stage/x64/lib;$(SIGDM_PATH)/SigDM/external/mecab/x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <CustomBuildStep>
+      <Command>
+      </Command>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\TopicModel\SigTM\lib\model\lda_gibbs.cpp" />
+    <ClCompile Include="..\..\SigRec\example\example_ctr.cpp" />
+    <ClCompile Include="..\..\SigRec\example\example_mf_sgd.cpp" />
     <ClCompile Include="..\..\SigRec\lib\model\ctr.cpp" />
     <ClCompile Include="..\..\SigRec\main.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SIG_UTIL);$(BOOST_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -161,12 +181,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\SigRec\example\example.h" />
+    <ClInclude Include="..\..\SigRec\example\make_input.hpp" />
     <ClInclude Include="..\..\SigRec\lib\model\ctr.h" />
-    <ClInclude Include="..\..\SigRec\lib\model\matrix_factorization.hpp" />
-    <ClInclude Include="..\..\SigRec\lib\model\matrix_factorization_impl.hpp" />
+    <ClInclude Include="..\..\SigRec\lib\model\mf_sgd.hpp" />
+    <ClInclude Include="..\..\SigRec\lib\model\pmf_coords.hpp" />
+    <ClInclude Include="..\..\SigRec\lib\model\mf_interface.hpp" />
     <ClInclude Include="..\..\SigRec\lib\sigrec.hpp" />
-    <ClInclude Include="..\..\SigRec\lib\util\eigen_ublas_util.hpp" />
-    <ClInclude Include="..\..\SigRec\lib\util\rating_matrix.hpp" />
     <ClInclude Include="..\..\SigRec\lib\validation\cross_validation.hpp" />
     <ClInclude Include="..\..\SigRec\lib\validation\ctr_validation.hpp" />
     <ClInclude Include="..\..\SigRec\lib\validation\metrics.hpp" />

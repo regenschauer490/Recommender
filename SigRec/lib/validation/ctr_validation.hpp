@@ -1,22 +1,22 @@
 ﻿/*
-Copyright(c) 2014 Akihiro Nishimura
+Copyright(c) 2015 Akihiro Nishimura
 
 This software is released under the MIT License.
 http://opensource.org/licenses/mit-license.php
 */
 
-#ifndef SIGTM_CTR_VALIDATION_HPP
-#define SIGTM_CTR_VALIDATION_HPP
+#ifndef SIGREC_CTR_VALIDATION_HPP
+#define SIGREC_CTR_VALIDATION_HPP
 
 #include "../model/ctr.h"
-#include "../helper/metrics.hpp"
-#include "../helper/cross_validation.hpp"
+#include "metrics.hpp"
+#include "cross_validation.hpp"
+#include "SigDM/lib/ratings/sparse_boolean_matrix.hpp"
 #include "SigUtil/lib/functional/filter.hpp"
-#include "SigUtil/lib/modify/sort.hpp"
 #include "SigUtil/lib/tools/histgram.hpp"
 //#include <boost/numeric/ublas/matrix_sparse.hpp>
 
-namespace sigtm
+namespace sigrec
 {
 
 template <>
@@ -27,8 +27,8 @@ public:
 
 	struct DetailInfo : public DetailInfoBase
 	{
-		const uint user_num_;
-		const uint item_num_;
+		uint const user_num_;
+		uint const item_num_;
 		const DocumentSetPtr docs_;
 		const CTRHyperParamPtr hparam_;
 		std::vector<Histgram> hist_;
@@ -38,11 +38,10 @@ public:
 			: DetailInfoBase(is_user_test, div_num), user_num_(user_num), item_num_(item_num), docs_(docs), hparam_(param){}
 		DetailInfo(DetailInfo const&) = delete;
 
-		void save(sig::FilepassString pass) const override{
-			DetailInfoBase::save(pass);
+		void save(sig::FilepathString path) const override{
+			DetailInfoBase::save(path);
 			{
-				std::wcout << pass;
-				std::ofstream ofs(pass, std::ios::out | std::ios::app);
+				std::ofstream ofs(path, std::ios::out | std::ios::app);
 				ofs << std::endl;
 				ofs << "number of users: " << user_num_ << std::endl;
 				ofs << "number of items: " << item_num_ << std::endl;
@@ -58,7 +57,7 @@ public:
 				ofs << std::endl;
 				ofs << "histgram of estimate ratings: " << std::endl;
 			}
-			for (auto const& e : hist_) e->print(pass, false);
+			for (auto const& e : hist_) e->print(path, false);
 		}
 	};
 
@@ -71,7 +70,17 @@ private:
 	std::shared_ptr<DetailInfo> detail_info_sub_;
 	
 public:
-	CrossValidation(uint div_num, bool is_user_test, CTRHyperParamPtr hparam, DocumentSetPtr docs, RatingMatrixPtr<CTR::RatingValueType> ratings, uint max_iter, uint min_iter, FilepassString save_info_dir, bool is_save_param)
+	CrossValidation(
+		uint div_num,
+		bool is_user_test,
+		CTRHyperParamPtr hparam,
+		DocumentSetPtr docs,
+		SparseRatingMatrixPtr<CTR::RatingValueType> ratings,
+		uint max_iter,
+		uint min_iter,
+		FilepathString save_info_dir,
+		bool is_save_param
+	)
 		: CrossValidationBase(std::make_shared<DetailInfo>(ratings->userSize(), ratings->itemSize(), docs, hparam, is_user_test, div_num)),
 		models_(0), hparam_(hparam), docs_(docs), detail_info_sub_(std::dynamic_pointer_cast<DetailInfo>(detail_info_))
 	{
@@ -79,7 +88,7 @@ public:
 		//rating_chunks_ = devide_adjusted_random(*ratings);
 
 		auto train_model = [=](uint i){
-			const uint vsize = detail_info_sub_->is_user_test_ ? detail_info_sub_->user_num_ : detail_info_sub_->item_num_;
+			uint const vsize = detail_info_sub_->is_user_test_ ? detail_info_sub_->user_num_ : detail_info_sub_->item_num_;
 			auto model = CTR::makeInstance(hparam_, docs_, SparseBooleanMatrix::makeInstance(join_chunc(vsize, rating_chunks_, i)), i);
 			model->train(max_iter, min_iter, save_info_dir, is_save_param);
 			return model;
@@ -97,7 +106,7 @@ public:
 			return hist;
 		};
 
-		const uint n = detail_info_sub_->div_num_;
+		uint const n = detail_info_sub_->div_num_;
 		const auto sqn =  sig::seqn(0u, 1u, n);
 
 		models_ = run_parallel<CTRPtr>(train_model, n, sqn.begin());
@@ -124,7 +133,7 @@ public:
 		
 		std::vector<R> result;
 
-		const uint n = detail_info_sub_->div_num_;
+		uint const n = detail_info_sub_->div_num_;
 		return run_parallel<R>(validation, n, sig::seqn(0u, 1u, n).begin());
 	}
 };
@@ -243,7 +252,7 @@ struct InterUserDiversity<CTR> : public InterUserDiversityImpl
 		std::vector<std::vector<Id>> ests;
 
 		for (Id id = 0, size = test_set.size(); id < size; ++id) {
-			auto est = model->recommend(id, is_user_test, top_n_, sigtm::nothing);
+			auto est = model->recommend(id, is_user_test, top_n_, Nothing(double{}));
 			if (est.size() < 1) continue;
 
 			auto tmp = sig::map([](CTR::EstValueType const& e) { return e.first; }, est);

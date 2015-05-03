@@ -28,3 +28,10 @@
 *.app
 /project/VisualStudio 2014/Debug
 /project/VisualStudio 2014/x64/Debug
+*.opensdf
+*.sdf
+*.suo
+project/VisualStudio 2014/SigRec.vcxproj.user
+*.log
+*.pdb
+*.tlog
